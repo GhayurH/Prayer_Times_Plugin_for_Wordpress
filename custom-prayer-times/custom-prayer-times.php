@@ -197,11 +197,11 @@ function display_prayer_times_table() {
     $color_options = get_option('prayer_times_color_options');
 
     // Apply user-defined styles for the main table content
-    $table_style = 'border-collapse: collapse; width: auto;';
+    $table_style = 'border-collapse: collapse; width: auto; margin-left: auto; margin-right: auto; line-height: normal;';
     $font_style = 'font-family: ' . esc_attr($display_options['font_family'] ?? 'Arial') . '; font-size: ' . esc_attr($display_options['font_size'] ?? '14') . 'px;';
 
     // Apply user-defined styles for the heading and subheading
-    $heading_font_style = 'font-family: ' . esc_attr($display_options['heading_font_family'] ?? 'Arial') . '; font-size: ' . esc_attr($display_options['heading_font_size'] ?? '24') . 'px; font-weight: bold;';
+    $heading_font_style = 'font-family: ' . esc_attr($display_options['heading_font_family'] ?? 'Arial') . '; font-size: ' . esc_attr($display_options['heading_font_size'] ?? '24') . 'px; font-weight: bold; margin-bottom: 0.0em;';
     $subheading_font_style = 'font-family: ' . esc_attr($display_options['subheading_font_family'] ?? 'Arial') . '; font-size: ' . esc_attr($display_options['subheading_font_size'] ?? '16') . 'px;';
 
     // Check if prayer times exist for the current date
