@@ -3,7 +3,7 @@
 Plugin Name: Prayer Times
 Plugin URI: https://yourwebsite.com
 Description: A plugin to display prayer times from a CSV file with customizable display options.
-Version: 1.3
+Version: 1.4
 Author: Ghayur Haider
 Author URI: https://yourwebsite.com
 */
@@ -210,7 +210,7 @@ function display_prayer_times_table() {
 
         // Display the heading and subheading with user-defined styles
         echo "<h2 style='$heading_font_style'>Prayer Times</h2>";
-        echo "<p style='$subheading_font_style'>for the Region of Waterloo " . date('jS F Y') . "</p>";
+        echo "<p style='$subheading_font_style'>for the Region of Waterloo <br>" . date('jS F Y') . "</p>";
         
         // Display the prayer times in a table with user-defined styles
         echo "<table style='$table_style'>";
