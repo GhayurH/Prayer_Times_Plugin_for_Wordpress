@@ -176,8 +176,8 @@ function round_and_convert_prayer_time($time, $prayer) {
         return $time;  // Return as-is if format doesn't match
     }
 
-    if (in_array($prayer, ['Sunrise', 'Sunset', 'Maghrib'])) {
-        // Round down to the minute for Sunrise, Sunset, and Maghrib
+    if (in_array($prayer, ['Sunrise', 'Sunset', 'Midnight'])) {
+        // Round down to the minute for Sunrise, Sunset, and Midnight
         $dt->setTime($dt->format('H'), $dt->format('i'), 0); // Remove seconds
     } else {
         // Round up for the rest
