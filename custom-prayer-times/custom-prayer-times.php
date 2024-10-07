@@ -1,11 +1,9 @@
 <?php
 /*
 Plugin Name: Prayer Times
-Plugin URI: https://yourwebsite.com
 Description: A plugin to display prayer times from a CSV file with customizable display options.
-Version: 1.4
+Version: 1.5
 Author: Ghayur Haider
-Author URI: https://yourwebsite.com
 */
 
 // Register settings for the plugin
@@ -170,13 +168,24 @@ function get_prayer_times($csv_file_path, $maghrib_method) {
     return $prayer_times;
 }
 
-// Function to convert 24-hour time to 12-hour format with AM/PM
-function convert_to_12h_format($time) {
-    $date = DateTime::createFromFormat('H:i:s', $time);
-    if ($date) {
-        return $date->format('g:i A');
+// Function to round the time based on the prayer type and convert it to 12-hour format
+function round_and_convert_prayer_time($time, $prayer) {
+    $dt = DateTime::createFromFormat('H:i:s', $time);
+
+    if (!$dt) {
+        return $time;  // Return as-is if format doesn't match
     }
-    return $time;  // Return as-is if format doesn't match
+
+    if (in_array($prayer, ['Sunrise', 'Sunset', 'Maghrib'])) {
+        // Round down to the minute for Sunrise, Sunset, and Maghrib
+        $dt->setTime($dt->format('H'), $dt->format('i'), 0); // Remove seconds
+    } else {
+        // Round up for the rest
+        $dt->modify('+1 minute')->setTime($dt->format('H'), $dt->format('i'), 0);
+    }
+
+    // Convert the rounded time to 12-hour format
+    return $dt->format('g:i A');
 }
 
 // Function to display prayer times in a table format
@@ -189,7 +198,8 @@ function display_prayer_times_table() {
     $prayer_times = get_prayer_times($csv_file_path, $maghrib_method);
 
     // Get the current date in YYYY-MM-DD format
-    $current_date = date('Y-m-d');
+    $dat = new DateTime("now", new DateTimeZone('America/Toronto'));
+    $current_date = $dat->format('Y-m-d');
 
     // Fetch the admin options for which times to display
     $options = get_option('prayer_times_display_options');
@@ -210,7 +220,7 @@ function display_prayer_times_table() {
 
         // Display the heading and subheading with user-defined styles
         echo "<h2 style='$heading_font_style'>Prayer Times</h2>";
-        echo "<p style='$subheading_font_style'>for the Region of Waterloo <br>" . date('jS F Y') . "</p>";
+        echo "<p style='$subheading_font_style'>for the Region of Waterloo <br>" . $dat->format('jS F Y') . "</p>";
         
         // Display the prayer times in a table with user-defined styles
         echo "<table style='$table_style'>";
@@ -221,7 +231,7 @@ function display_prayer_times_table() {
                 $alignment = esc_attr($display_options[$prayer . '_alignment'] ?? 'left');
                 echo "<tr>";
                 echo "<td style='padding: 8px; border: 1px solid #ddd; white-space: nowrap; $font_style $color_style text-align: $alignment;'>$prayer</td>";
-                echo "<td style='padding: 8px; border: 1px solid #ddd; white-space: nowrap; $font_style $color_style text-align: $alignment;'>" . convert_to_12h_format($time) . "</td>";
+                echo "<td style='padding: 8px; border: 1px solid #ddd; white-space: nowrap; $font_style $color_style text-align: $alignment;'>" . round_and_convert_prayer_time($time, $prayer) . "</td>";                            
                 echo "</tr>";
             }
         }
