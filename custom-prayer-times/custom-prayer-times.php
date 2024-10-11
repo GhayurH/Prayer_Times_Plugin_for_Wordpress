@@ -2,7 +2,7 @@
 /*
 Plugin Name: Prayer Times
 Description: A plugin to display prayer times from a CSV file with customizable display options.
-Version: 1.6.3
+Version: 1.7
 Author: Ghayur Haider
 */
 
@@ -242,7 +242,7 @@ function prayer_times_daily_styling_settings() {
     ?>
     <h3>Daily Prayer Times Styling Options</h3>
     <table class="form-table">
-        <?php 
+        <?php
         $text_options = (array) get_option('prayer_times_text_options', []);
         ?>
         <tr valign="top">
@@ -338,7 +338,7 @@ function prayer_times_monthly_styling_settings() {
     ?>
     <h3>Monthly Prayer Times Styling Options</h3>
     <table class="form-table">
-        <?php 
+        <?php
         $monthly_style_options = (array) get_option('prayer_times_monthly_style_options', []);
         ?>
         <tr valign="top">
@@ -662,7 +662,7 @@ function generate_monthly_table($prayer_times, $selected_month) {
     // Generate CSS styles
     $table_style = "width: 100%; border-collapse: collapse; font-family: $font_family; font-size: $font_size; color: $font_color; font-weight: $font_weight; text-align: $text_alignment;";
     $cell_border_style = "border: {$border_size}px {$border_style} {$border_color};";
-    $heading_style = "font-family: $heading_font_family; font-size: $heading_font_size; color: $heading_font_color; font-weight: $heading_font_weight; text-align: $heading_alignment;";
+    $heading_style = "$cell_border_style font-family: $heading_font_family; font-size: $heading_font_size; color: $heading_font_color; font-weight: $heading_font_weight; text-align: $heading_alignment;";
 
     // Generate the monthly table
     $output = "<div style='overflow-x:auto;'><table class='prayer-times-table' style='$table_style'>";
@@ -751,7 +751,7 @@ function prayer_times_daily_shortcode() {
             $alignment = esc_attr($text_options[$prayer . '_alignment'] ?? 'left');
             echo "<tr>";
             echo "<td style='padding: 8px; border: 1px solid #ddd; white-space: nowrap; $font_style $color_style text-align: $alignment;'>$prayer</td>";
-            echo "<td style='padding: 8px; border: 1px solid #ddd; white-space: nowrap; $font_style $color_style text-align: $alignment;'>" . round_and_convert_prayer_time($time, $prayer) . "</td>";                            
+            echo "<td style='padding: 8px; border: 1px solid #ddd; white-space: nowrap; $font_style $color_style text-align: $alignment;'>" . round_and_convert_prayer_time($time, $prayer) . "</td>";
             echo "</tr>";
         }
     }
