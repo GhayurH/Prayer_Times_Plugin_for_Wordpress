@@ -2,7 +2,7 @@
 /*
 Plugin Name: Prayer Times
 Description: A plugin to display prayer times from a CSV file with customizable display options.
-Version: 1.6.2
+Version: 1.6.3
 Author: Ghayur Haider
 */
 
@@ -15,10 +15,13 @@ function prayer_times_register_settings() {
     register_setting('prayer_times_general_options', 'prayer_times_display_options', 'prayer_times_sanitize_checkbox_options');
     register_setting('prayer_times_general_options', 'prayer_times_monthly_display_options', 'prayer_times_sanitize_checkbox_options');
 
-    // Styling Settings
-    register_setting('prayer_times_styling_options', 'prayer_times_text_options', 'prayer_times_sanitize_text_options');
-    register_setting('prayer_times_styling_options', 'prayer_times_color_options', 'prayer_times_sanitize_color_options');
-    register_setting('prayer_times_styling_options', 'prayer_times_monthly_style_options', 'prayer_times_sanitize_monthly_style_options');
+    // Daily Styling Settings
+    register_setting('prayer_times_daily_styling_options', 'prayer_times_text_options', 'prayer_times_sanitize_text_options');
+    register_setting('prayer_times_daily_styling_options', 'prayer_times_color_options', 'prayer_times_sanitize_color_options');
+
+    // Monthly Styling Settings
+    register_setting('prayer_times_monthly_styling_options', 'prayer_times_monthly_style_options', 'prayer_times_sanitize_monthly_style_options');
+    register_setting('prayer_times_monthly_styling_options', 'prayer_times_monthly_heading_options', 'prayer_times_sanitize_monthly_heading_options'); // New heading options
 }
 add_action('admin_init', 'prayer_times_register_settings');
 
@@ -62,6 +65,21 @@ function prayer_times_sanitize_monthly_style_options($input) {
         $sanitized['font_weight'] = sanitize_text_field($input['font_weight'] ?? 'normal');
         $sanitized['text_alignment'] = sanitize_text_field($input['text_alignment'] ?? 'left');
         $sanitized['banded_rows'] = isset($input['banded_rows']) ? 1 : 0;
+        $sanitized['border_style'] = sanitize_text_field($input['border_style'] ?? 'solid');
+        $sanitized['border_size'] = intval($input['border_size'] ?? 1);
+        $sanitized['border_color'] = sanitize_hex_color($input['border_color'] ?? '#000000');
+    }
+    return $sanitized;
+}
+
+function prayer_times_sanitize_monthly_heading_options($input) {
+    $sanitized = array();
+    if (is_array($input)) {
+        $sanitized['font_family'] = sanitize_text_field($input['font_family'] ?? '');
+        $sanitized['font_size'] = intval($input['font_size'] ?? 24);
+        $sanitized['font_color'] = sanitize_hex_color($input['font_color'] ?? '#000000');
+        $sanitized['font_weight'] = sanitize_text_field($input['font_weight'] ?? 'bold');
+        $sanitized['text_alignment'] = sanitize_text_field($input['text_alignment'] ?? 'center');
     }
     return $sanitized;
 }
@@ -89,7 +107,8 @@ function prayer_times_settings_page() {
         <h2>Prayer Times Settings</h2>
         <h2 class="nav-tab-wrapper">
             <a href="?page=prayer-times-settings&tab=general_settings" class="nav-tab <?php echo $active_tab == 'general_settings' ? 'nav-tab-active' : ''; ?>">General Settings</a>
-            <a href="?page=prayer-times-settings&tab=styling" class="nav-tab <?php echo $active_tab == 'styling' ? 'nav-tab-active' : ''; ?>">Styling</a>
+            <a href="?page=prayer-times-settings&tab=daily_styling" class="nav-tab <?php echo $active_tab == 'daily_styling' ? 'nav-tab-active' : ''; ?>">Daily Styling</a>
+            <a href="?page=prayer-times-settings&tab=monthly_styling" class="nav-tab <?php echo $active_tab == 'monthly_styling' ? 'nav-tab-active' : ''; ?>">Monthly Styling</a>
             <a href="?page=prayer-times-settings&tab=shortcodes" class="nav-tab <?php echo $active_tab == 'shortcodes' ? 'nav-tab-active' : ''; ?>">Shortcodes</a>
             <a href="?page=prayer-times-settings&tab=upload_csv" class="nav-tab <?php echo $active_tab == 'upload_csv' ? 'nav-tab-active' : ''; ?>">Upload CSV</a>
         </h2>
@@ -107,12 +126,23 @@ function prayer_times_settings_page() {
                 </form>
                 <?php
                 break;
-            case 'styling':
+            case 'daily_styling':
                 ?>
                 <form method="post" action="options.php">
                     <?php
-                    settings_fields('prayer_times_styling_options');
-                    prayer_times_styling_settings();
+                    settings_fields('prayer_times_daily_styling_options');
+                    prayer_times_daily_styling_settings();
+                    submit_button();
+                    ?>
+                </form>
+                <?php
+                break;
+            case 'monthly_styling':
+                ?>
+                <form method="post" action="options.php">
+                    <?php
+                    settings_fields('prayer_times_monthly_styling_options');
+                    prayer_times_monthly_styling_settings();
                     submit_button();
                     ?>
                 </form>
@@ -207,8 +237,8 @@ function prayer_times_general_settings() {
     <?php
 }
 
-// Styling settings tab content
-function prayer_times_styling_settings() {
+// Daily Styling settings tab content
+function prayer_times_daily_styling_settings() {
     ?>
     <h3>Daily Prayer Times Styling Options</h3>
     <table class="form-table">
@@ -240,6 +270,16 @@ function prayer_times_styling_settings() {
             </td>
         </tr>
         <tr valign="top">
+            <th scope="row">Heading Alignment</th>
+            <td>
+                <select name="prayer_times_text_options[heading_alignment]">
+                    <option value="left" <?php selected($text_options['heading_alignment'] ?? 'center', 'left'); ?>>Left</option>
+                    <option value="center" <?php selected($text_options['heading_alignment'] ?? 'center', 'center'); ?>>Center</option>
+                    <option value="right" <?php selected($text_options['heading_alignment'] ?? 'center', 'right'); ?>>Right</option>
+                </select>
+            </td>
+        </tr>
+        <tr valign="top">
             <th scope="row">Subheading Font Family</th>
             <td>
                 <input type="text" name="prayer_times_text_options[subheading_font_family]" value="<?php echo esc_attr($text_options['subheading_font_family'] ?? 'Arial'); ?>" />
@@ -249,6 +289,16 @@ function prayer_times_styling_settings() {
             <th scope="row">Subheading Font Size</th>
             <td>
                 <input type="number" name="prayer_times_text_options[subheading_font_size]" value="<?php echo esc_attr($text_options['subheading_font_size'] ?? '16'); ?>" />
+            </td>
+        </tr>
+        <tr valign="top">
+            <th scope="row">Subheading Alignment</th>
+            <td>
+                <select name="prayer_times_text_options[subheading_alignment]">
+                    <option value="left" <?php selected($text_options['subheading_alignment'] ?? 'center', 'left'); ?>>Left</option>
+                    <option value="center" <?php selected($text_options['subheading_alignment'] ?? 'center', 'center'); ?>>Center</option>
+                    <option value="right" <?php selected($text_options['subheading_alignment'] ?? 'center', 'right'); ?>>Right</option>
+                </select>
             </td>
         </tr>
     </table>
@@ -280,7 +330,12 @@ function prayer_times_styling_settings() {
         }
         ?>
     </table>
+    <?php
+}
 
+// Monthly Styling settings tab content
+function prayer_times_monthly_styling_settings() {
+    ?>
     <h3>Monthly Prayer Times Styling Options</h3>
     <table class="form-table">
         <?php 
@@ -328,6 +383,83 @@ function prayer_times_styling_settings() {
             <th scope="row">Banded Rows</th>
             <td>
                 <input type="checkbox" name="prayer_times_monthly_style_options[banded_rows]" value="1" <?php checked(1, $monthly_style_options['banded_rows'] ?? 0); ?> /> Enable Banded Rows
+            </td>
+        </tr>
+    </table>
+
+    <h3>Monthly Table Borders</h3>
+    <table class="form-table">
+        <?php
+        // Define border options
+        $border_styles = ['none', 'solid', 'dashed', 'dotted', 'double', 'groove', 'ridge', 'inset', 'outset'];
+        ?>
+        <tr valign="top">
+            <th scope="row">Border Style</th>
+            <td>
+                <select name="prayer_times_monthly_style_options[border_style]">
+                    <?php
+                    foreach ($border_styles as $style) {
+                        echo '<option value="' . esc_attr($style) . '" ' . selected($monthly_style_options['border_style'] ?? 'solid', $style, false) . '>' . ucfirst($style) . '</option>';
+                    }
+                    ?>
+                </select>
+            </td>
+        </tr>
+        <tr valign="top">
+            <th scope="row">Border Size (px)</th>
+            <td>
+                <input type="number" name="prayer_times_monthly_style_options[border_size]" value="<?php echo esc_attr($monthly_style_options['border_size'] ?? '1'); ?>" min="0" />
+            </td>
+        </tr>
+        <tr valign="top">
+            <th scope="row">Border Color</th>
+            <td>
+                <input type="text" name="prayer_times_monthly_style_options[border_color]" value="<?php echo esc_attr($monthly_style_options['border_color'] ?? '#000000'); ?>" class="wp-color-picker-field" data-default-color="#000000" />
+            </td>
+        </tr>
+    </table>
+
+    <h3>Monthly Table Heading Styling Options</h3>
+    <table class="form-table">
+        <?php
+        $monthly_heading_options = (array) get_option('prayer_times_monthly_heading_options', []);
+        ?>
+        <tr valign="top">
+            <th scope="row">Heading Font Family</th>
+            <td>
+                <input type="text" name="prayer_times_monthly_heading_options[font_family]" value="<?php echo esc_attr($monthly_heading_options['font_family'] ?? 'Arial'); ?>" />
+            </td>
+        </tr>
+        <tr valign="top">
+            <th scope="row">Heading Font Size</th>
+            <td>
+                <input type="number" name="prayer_times_monthly_heading_options[font_size]" value="<?php echo esc_attr($monthly_heading_options['font_size'] ?? '24'); ?>" />
+            </td>
+        </tr>
+        <tr valign="top">
+            <th scope="row">Heading Font Color</th>
+            <td>
+                <input type="text" name="prayer_times_monthly_heading_options[font_color]" value="<?php echo esc_attr($monthly_heading_options['font_color'] ?? '#000000'); ?>" class="wp-color-picker-field" data-default-color="#000000" />
+            </td>
+        </tr>
+        <tr valign="top">
+            <th scope="row">Heading Font Weight</th>
+            <td>
+                <select name="prayer_times_monthly_heading_options[font_weight]">
+                    <option value="normal" <?php selected($monthly_heading_options['font_weight'] ?? 'bold', 'normal'); ?>>Normal</option>
+                    <option value="bold" <?php selected($monthly_heading_options['font_weight'] ?? 'bold', 'bold'); ?>>Bold</option>
+                    <option value="lighter" <?php selected($monthly_heading_options['font_weight'] ?? 'bold', 'lighter'); ?>>Lighter</option>
+                </select>
+            </td>
+        </tr>
+        <tr valign="top">
+            <th scope="row">Heading Alignment</th>
+            <td>
+                <select name="prayer_times_monthly_heading_options[text_alignment]">
+                    <option value="left" <?php selected($monthly_heading_options['text_alignment'] ?? 'center', 'left'); ?>>Left</option>
+                    <option value="center" <?php selected($monthly_heading_options['text_alignment'] ?? 'center', 'center'); ?>>Center</option>
+                    <option value="right" <?php selected($monthly_heading_options['text_alignment'] ?? 'center', 'right'); ?>>Right</option>
+                </select>
             </td>
         </tr>
     </table>
@@ -505,6 +637,7 @@ function generate_monthly_table($prayer_times, $selected_month) {
     // Fetch the admin options for which times to display
     $monthly_options = (array) get_option('prayer_times_monthly_display_options', []);
     $monthly_style_options = (array) get_option('prayer_times_monthly_style_options', []);
+    $monthly_heading_options = (array) get_option('prayer_times_monthly_heading_options', []);
 
     // Apply user-defined styles
     $font_family = esc_attr($monthly_style_options['font_family'] ?? 'Arial');
@@ -514,16 +647,32 @@ function generate_monthly_table($prayer_times, $selected_month) {
     $text_alignment = esc_attr($monthly_style_options['text_alignment'] ?? 'left');
     $banded_rows = !empty($monthly_style_options['banded_rows']);
 
+    // Border styles
+    $border_style = esc_attr($monthly_style_options['border_style'] ?? 'solid');
+    $border_size = intval($monthly_style_options['border_size'] ?? 1);
+    $border_color = esc_attr($monthly_style_options['border_color'] ?? '#000000');
+
+    // Heading styles
+    $heading_font_family = esc_attr($monthly_heading_options['font_family'] ?? 'Arial');
+    $heading_font_size = esc_attr($monthly_heading_options['font_size'] ?? '24') . 'px';
+    $heading_font_color = esc_attr($monthly_heading_options['font_color'] ?? '#000000');
+    $heading_font_weight = esc_attr($monthly_heading_options['font_weight'] ?? 'bold');
+    $heading_alignment = esc_attr($monthly_heading_options['text_alignment'] ?? 'center');
+
+    // Generate CSS styles
     $table_style = "width: 100%; border-collapse: collapse; font-family: $font_family; font-size: $font_size; color: $font_color; font-weight: $font_weight; text-align: $text_alignment;";
+    $cell_border_style = "border: {$border_size}px {$border_style} {$border_color};";
+    $heading_style = "font-family: $heading_font_family; font-size: $heading_font_size; color: $heading_font_color; font-weight: $heading_font_weight; text-align: $heading_alignment;";
 
     // Generate the monthly table
-    $output = "<table class='prayer-times-table' style='$table_style'>";
-    $output .= "<thead><tr><th colspan='" . (count($monthly_options) + 1) . "' class='prayer-times-header'>$selected_month $year</th></tr>";
-    $output .= "<tr><th>Date</th>";
+    $output = "<div style='overflow-x:auto;'><table class='prayer-times-table' style='$table_style'>";
+    $output .= "<thead><tr><th colspan='" . (count($monthly_options) + 1) . "' style='$heading_style'>$selected_month $year</th></tr>";
+    $output .= "<tr>";
+    $output .= "<th style='$cell_border_style'>Date</th>";
 
     foreach ($monthly_options as $prayer => $value) {
         if ($value) {
-            $output .= "<th>$prayer</th>";
+            $output .= "<th style='$cell_border_style'>$prayer</th>";
         }
     }
     $output .= "</tr></thead><tbody>";
@@ -537,11 +686,11 @@ function generate_monthly_table($prayer_times, $selected_month) {
                 $row_style = ($row_count % 2 == 0) ? 'background-color: #f9f9f9;' : 'background-color: #ffffff;';
             }
             $output .= "<tr style='$row_style'>";
-            $output .= "<td>" . $date_obj->format('d M') . "</td>";
+            $output .= "<td style='$cell_border_style'>" . $date_obj->format('d M') . "</td>";
 
             foreach ($monthly_options as $prayer => $value) {
                 if ($value) {
-                    $output .= "<td>" . round_and_convert_prayer_time($times[$prayer], $prayer) . "</td>";
+                    $output .= "<td style='$cell_border_style'>" . round_and_convert_prayer_time($times[$prayer], $prayer) . "</td>";
                 }
             }
 
@@ -549,7 +698,7 @@ function generate_monthly_table($prayer_times, $selected_month) {
             $row_count++;
         }
     }
-    $output .= "</tbody></table><br>";
+    $output .= "</tbody></table></div><br>";
 
     return $output;
 }
@@ -574,16 +723,16 @@ function prayer_times_daily_shortcode() {
 
     // Fetch the admin options for which times to display
     $options = (array) get_option('prayer_times_display_options', []);
-    $display_options = (array) get_option('prayer_times_text_options', []);
+    $text_options = (array) get_option('prayer_times_text_options', []);
     $color_options = (array) get_option('prayer_times_color_options', []);
 
     // Apply user-defined styles for the main table content
     $table_style = 'border-collapse: collapse; width: auto; margin-left: auto; margin-right: auto; line-height: normal;';
-    $font_style = 'font-family: ' . esc_attr($display_options['font_family'] ?? 'Arial') . '; font-size: ' . esc_attr($display_options['font_size'] ?? '14') . 'px;';
+    $font_style = 'font-family: ' . esc_attr($text_options['font_family'] ?? 'Arial') . '; font-size: ' . esc_attr($text_options['font_size'] ?? '14') . 'px;';
 
     // Apply user-defined styles for the heading and subheading
-    $heading_font_style = 'font-family: ' . esc_attr($display_options['heading_font_family'] ?? 'Arial') . '; font-size: ' . esc_attr($display_options['heading_font_size'] ?? '24') . 'px; font-weight: bold; margin-bottom: 0.0em;';
-    $subheading_font_style = 'font-family: ' . esc_attr($display_options['subheading_font_family'] ?? 'Arial') . '; font-size: ' . esc_attr($display_options['subheading_font_size'] ?? '16') . 'px;';
+    $heading_font_style = 'font-family: ' . esc_attr($text_options['heading_font_family'] ?? 'Arial') . '; font-size: ' . esc_attr($text_options['heading_font_size'] ?? '24') . 'px; font-weight: bold; margin-bottom: 0.0em; text-align: ' . esc_attr($text_options['heading_alignment'] ?? 'center') . ';';
+    $subheading_font_style = 'font-family: ' . esc_attr($text_options['subheading_font_family'] ?? 'Arial') . '; font-size: ' . esc_attr($text_options['subheading_font_size'] ?? '16') . 'px; text-align: ' . esc_attr($text_options['subheading_alignment'] ?? 'center') . ';';
 
     // Generate the daily table
     $times = $prayer_times[$today_date];
@@ -599,7 +748,7 @@ function prayer_times_daily_shortcode() {
     foreach ($times as $prayer => $time) {
         if (isset($options[$prayer]) && $options[$prayer]) {
             $color_style = 'color: ' . esc_attr($color_options[$prayer . '_color'] ?? '#000000') . ';';
-            $alignment = esc_attr($display_options[$prayer . '_alignment'] ?? 'left');
+            $alignment = esc_attr($text_options[$prayer . '_alignment'] ?? 'left');
             echo "<tr>";
             echo "<td style='padding: 8px; border: 1px solid #ddd; white-space: nowrap; $font_style $color_style text-align: $alignment;'>$prayer</td>";
             echo "<td style='padding: 8px; border: 1px solid #ddd; white-space: nowrap; $font_style $color_style text-align: $alignment;'>" . round_and_convert_prayer_time($time, $prayer) . "</td>";                            
