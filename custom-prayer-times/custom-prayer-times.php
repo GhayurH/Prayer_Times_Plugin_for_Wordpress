@@ -171,7 +171,7 @@ function prayer_times_general_settings() {
             <td>
                 <?php
                 $prayers = ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Sunset', 'Maghrib', 'Isha', 'Midnight'];
-                $monthly_options = get_option('prayer_times_monthly_display_options', []);
+                $monthly_options = (array) get_option('prayer_times_monthly_display_options', []);
                 foreach ($prayers as $prayer) {
                     ?>
                     <label>
@@ -191,7 +191,7 @@ function prayer_times_general_settings() {
             <th scope="row">Prayer Times to Display (Daily)</th>
             <td>
                 <?php
-                $daily_options = get_option('prayer_times_display_options', []);
+                $daily_options = (array) get_option('prayer_times_display_options', []);
                 foreach ($prayers as $prayer) {
                     ?>
                     <label>
@@ -503,8 +503,8 @@ function generate_monthly_table($prayer_times, $selected_month) {
     $year = (new DateTime("now", new DateTimeZone($timezone)))->format('Y');
 
     // Fetch the admin options for which times to display
-    $monthly_options = get_option('prayer_times_monthly_display_options', []);
-    $monthly_style_options = get_option('prayer_times_monthly_style_options', []);
+    $monthly_options = (array) get_option('prayer_times_monthly_display_options', []);
+    $monthly_style_options = (array) get_option('prayer_times_monthly_style_options', []);
 
     // Apply user-defined styles
     $font_family = esc_attr($monthly_style_options['font_family'] ?? 'Arial');
@@ -573,9 +573,9 @@ function prayer_times_daily_shortcode() {
     }
 
     // Fetch the admin options for which times to display
-    $options = get_option('prayer_times_display_options', []);
-    $display_options = get_option('prayer_times_text_options', []);
-    $color_options = get_option('prayer_times_color_options', []);
+    $options = (array) get_option('prayer_times_display_options', []);
+    $display_options = (array) get_option('prayer_times_text_options', []);
+    $color_options = (array) get_option('prayer_times_color_options', []);
 
     // Apply user-defined styles for the main table content
     $table_style = 'border-collapse: collapse; width: auto; margin-left: auto; margin-right: auto; line-height: normal;';
