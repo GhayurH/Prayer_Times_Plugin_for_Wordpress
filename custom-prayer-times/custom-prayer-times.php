@@ -2,7 +2,7 @@
 /*
 Plugin Name: Prayer Times
 Description: A plugin to display prayer times from a CSV file with customizable display options.
-Version: 1.6
+Version: 1.6.1
 Author: Ghayur Haider
 */
 
@@ -45,26 +45,28 @@ function prayer_times_settings_page() {
             <a href="?page=prayer-times-settings&tab=upload_csv" class="nav-tab <?php echo $active_tab == 'upload_csv' ? 'nav-tab-active' : ''; ?>">Upload CSV</a>
         </h2>
 
-        <form method="post" action="options.php">
-            <?php
-            settings_fields('prayer_times_options_group');
-            do_settings_sections('prayer_times_options_group');
-
-            switch ($active_tab) {
-                case 'general_settings':
+        <?php
+        switch ($active_tab) {
+            case 'general_settings':
+                ?>
+                <form method="post" action="options.php">
+                    <?php
+                    settings_fields('prayer_times_options_group');
+                    do_settings_sections('prayer_times_options_group');
                     prayer_times_general_settings();
-                    break;
-                case 'shortcodes':
-                    prayer_times_shortcodes_settings();
-                    break;
-                case 'upload_csv':
-                    prayer_times_upload_page();
-                    break;
-            }
-
-            submit_button();
-            ?>
-        </form>
+                    submit_button();
+                    ?>
+                </form>
+                <?php
+                break;
+            case 'shortcodes':
+                prayer_times_shortcodes_settings();
+                break;
+            case 'upload_csv':
+                prayer_times_upload_page();
+                break;
+        }
+        ?>
     </div>
     <?php
 }
@@ -225,11 +227,7 @@ function prayer_times_shortcodes_settings() {
         </tr>
         <tr valign="top">
             <th scope="row">[prayer_times_daily]</th>
-            <td>Displays the prayer times for today. Usage: [prayer_times_daily]</td>
-        </tr>
-        <tr valign="top">
-            <th scope="row">[prayer_times_table]</th>
-            <td>Displays the prayer times in a table with custom styles. Usage: [prayer_times_table]</td>
+            <td>Displays the prayer times for today with custom styles. Usage: [prayer_times_daily]</td>
         </tr>
     </table>
     <?php
@@ -237,6 +235,35 @@ function prayer_times_shortcodes_settings() {
 
 // Admin page content to upload the CSV file
 function prayer_times_upload_page() {
+    // Handle CSV file upload
+    if (isset($_POST['upload_csv']) && isset($_FILES['prayer_csv_file'])) {
+        // Verify nonce
+        if (!isset($_POST['prayer_times_upload_csv_nonce']) || !wp_verify_nonce($_POST['prayer_times_upload_csv_nonce'], 'prayer_times_upload_csv')) {
+            echo '<div class="notice notice-error is-dismissible"><p>Security check failed. Please try again.</p></div>';
+        } else {
+            $uploaded_file = $_FILES['prayer_csv_file'];
+            $upload_dir = plugin_dir_path(__FILE__) . 'uploads/';
+
+            // Ensure the uploads directory exists
+            if (!file_exists($upload_dir)) {
+                mkdir($upload_dir, 0755, true);
+            }
+
+            // Check if the uploaded file is a CSV
+            $filetype = wp_check_filetype($uploaded_file['name']);
+            if ($filetype['ext'] !== 'csv') {
+                echo '<div class="notice notice-error is-dismissible"><p>Invalid file type. Please upload a CSV file.</p></div>';
+            } else {
+                // Move the uploaded file to the plugin directory
+                $target_file = $upload_dir . 'prayertimes.csv';
+                if (move_uploaded_file($uploaded_file['tmp_name'], $target_file)) {
+                    echo '<div class="notice notice-success is-dismissible"><p>Prayer times CSV uploaded successfully!</p></div>';
+                } else {
+                    echo '<div class="notice notice-error is-dismissible"><p>Failed to upload CSV file.</p></div>';
+                }
+            }
+        }
+    }
     ?>
     <div class="wrap">
         <h3>Upload Prayer Times CSV</h3>
@@ -249,38 +276,6 @@ function prayer_times_upload_page() {
         </form>
     </div>
     <?php
-
-    // Handle CSV file upload
-    if (isset($_POST['upload_csv']) && isset($_FILES['prayer_csv_file'])) {
-        // Verify nonce
-        if (!isset($_POST['prayer_times_upload_csv_nonce']) || !wp_verify_nonce($_POST['prayer_times_upload_csv_nonce'], 'prayer_times_upload_csv')) {
-            echo '<div class="notice notice-error is-dismissible"><p>Security check failed. Please try again.</p></div>';
-            return;
-        }
-
-        $uploaded_file = $_FILES['prayer_csv_file'];
-        $upload_dir = plugin_dir_path(__FILE__) . 'uploads/';
-
-        // Ensure the uploads directory exists
-        if (!file_exists($upload_dir)) {
-            mkdir($upload_dir, 0755, true);
-        }
-
-        // Check if the uploaded file is a CSV
-        $filetype = wp_check_filetype($uploaded_file['name']);
-        if ($filetype['ext'] !== 'csv') {
-            echo '<div class="notice notice-error is-dismissible"><p>Invalid file type. Please upload a CSV file.</p></div>';
-            return;
-        }
-
-        // Move the uploaded file to the plugin directory
-        $target_file = $upload_dir . 'prayertimes.csv';
-        if (move_uploaded_file($uploaded_file['tmp_name'], $target_file)) {
-            echo '<div class="notice notice-success is-dismissible"><p>Prayer times CSV uploaded successfully!</p></div>';
-        } else {
-            echo '<div class="notice notice-error is-dismissible"><p>Failed to upload CSV file.</p></div>';
-        }
-    }
 }
 
 // Function to get prayer times from the CSV file
@@ -424,8 +419,8 @@ function generate_monthly_table($prayer_times, $selected_month) {
     return $output;
 }
 
-// Shortcode to display the daily prayer times table
-function prayer_times_daily_table_shortcode() {
+// Shortcode to display the daily prayer times table with custom styles
+function prayer_times_daily_shortcode() {
     // Path to the uploaded CSV file
     $csv_file_path = plugin_dir_path(__FILE__) . 'uploads/prayertimes.csv';
 
@@ -443,40 +438,6 @@ function prayer_times_daily_table_shortcode() {
     }
 
     // Fetch the admin options for which times to display
-    $display_options = get_option('prayer_times_display_options', []);
-
-    // Generate the daily table
-    $times = $prayer_times[$today_date];
-    $output = "<table class='prayer-times-table'>";
-    $output .= "<thead><tr><th colspan='2' class='prayer-times-header'>Prayer Times for Today (" . $dat->format('jS F Y') . ")</th></tr></thead><tbody>";
-
-    foreach ($times as $prayer => $time) {
-        if (isset($display_options[$prayer]) && $display_options[$prayer]) {
-            $output .= "<tr><td>$prayer</td><td>" . round_and_convert_prayer_time($time, $prayer) . "</td></tr>";
-        }
-    }
-
-    $output .= "</tbody></table><br>";
-
-    return $output;
-}
-add_shortcode('prayer_times_daily', 'prayer_times_daily_table_shortcode');
-
-// Function to display prayer times in a table format
-function display_prayer_times_table() {
-    // Path to the uploaded CSV file
-    $csv_file_path = plugin_dir_path(__FILE__) . 'uploads/prayertimes.csv';
-
-    // Get prayer times from the CSV file
-    $maghrib_method = get_option('prayer_times_maghrib_method', 'calculated');
-    $prayer_times = get_prayer_times($csv_file_path, $maghrib_method);
-
-    // Get the current date in YYYY-MM-DD format
-    $timezone = get_option('prayer_times_timezone', 'America/Toronto');
-    $dat = new DateTime("now", new DateTimeZone($timezone));
-    $current_date = $dat->format('Y-m-d');
-
-    // Fetch the admin options for which times to display
     $options = get_option('prayer_times_display_options', []);
     $display_options = get_option('prayer_times_text_options', []);
     $color_options = get_option('prayer_times_color_options', []);
@@ -489,39 +450,31 @@ function display_prayer_times_table() {
     $heading_font_style = 'font-family: ' . esc_attr($display_options['heading_font_family'] ?? 'Arial') . '; font-size: ' . esc_attr($display_options['heading_font_size'] ?? '24') . 'px; font-weight: bold; margin-bottom: 0.0em;';
     $subheading_font_style = 'font-family: ' . esc_attr($display_options['subheading_font_family'] ?? 'Arial') . '; font-size: ' . esc_attr($display_options['subheading_font_size'] ?? '16') . 'px;';
 
-    // Check if prayer times exist for the current date
-    if (array_key_exists($current_date, $prayer_times)) {
-        $times = $prayer_times[$current_date];
-
-        // Display the heading and subheading with user-defined styles
-        echo "<h2 style='$heading_font_style'>Prayer Times</h2>";
-        echo "<p style='$subheading_font_style'>for the Region of Waterloo <br>" . $dat->format('jS F Y') . "</p>";
-        
-        // Display the prayer times in a table with user-defined styles
-        echo "<table style='$table_style'>";
-
-        foreach ($times as $prayer => $time) {
-            if (isset($options[$prayer]) && $options[$prayer]) {
-                $color_style = 'color: ' . esc_attr($color_options[$prayer . '_color'] ?? '#000000') . ';';
-                $alignment = esc_attr($display_options[$prayer . '_alignment'] ?? 'left');
-                echo "<tr>";
-                echo "<td style='padding: 8px; border: 1px solid #ddd; white-space: nowrap; $font_style $color_style text-align: $alignment;'>$prayer</td>";
-                echo "<td style='padding: 8px; border: 1px solid #ddd; white-space: nowrap; $font_style $color_style text-align: $alignment;'>" . round_and_convert_prayer_time($time, $prayer) . "</td>";                            
-                echo "</tr>";
-            }
-        }
-
-        echo "</table>";
-    } else {
-        echo "<p style='$font_style'>Prayer times for today are not available.</p>";
-    }
-}
-
-// Shortcode to display the prayer times table
-function prayer_times_table_shortcode() {
+    // Generate the daily table
+    $times = $prayer_times[$today_date];
     ob_start();
-    display_prayer_times_table();
+
+    // Display the heading and subheading with user-defined styles
+    echo "<h2 style='$heading_font_style'>Prayer Times</h2>";
+    echo "<p style='$subheading_font_style'>for the Region of Waterloo <br>" . $dat->format('jS F Y') . "</p>";
+
+    // Display the prayer times in a table with user-defined styles
+    echo "<table style='$table_style'>";
+
+    foreach ($times as $prayer => $time) {
+        if (isset($options[$prayer]) && $options[$prayer]) {
+            $color_style = 'color: ' . esc_attr($color_options[$prayer . '_color'] ?? '#000000') . ';';
+            $alignment = esc_attr($display_options[$prayer . '_alignment'] ?? 'left');
+            echo "<tr>";
+            echo "<td style='padding: 8px; border: 1px solid #ddd; white-space: nowrap; $font_style $color_style text-align: $alignment;'>$prayer</td>";
+            echo "<td style='padding: 8px; border: 1px solid #ddd; white-space: nowrap; $font_style $color_style text-align: $alignment;'>" . round_and_convert_prayer_time($time, $prayer) . "</td>";                            
+            echo "</tr>";
+        }
+    }
+
+    echo "</table>";
+
     return ob_get_clean();
 }
-add_shortcode('prayer_times_table', 'prayer_times_table_shortcode');
+add_shortcode('prayer_times_daily', 'prayer_times_daily_shortcode');
 ?>
